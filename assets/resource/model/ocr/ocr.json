@@ -1,0 +1,10 @@
+{
+    "det": "D:/Project/AutoPlayGame/MFAAvalonia-v2.11.8-win-x64/assets/resource/model/ocr/det.onnx",
+    "rec": "D:/Project/AutoPlayGame/MFAAvalonia-v2.11.8-win-x64/assets/resource/model/ocr/rec.onnx",
+    "keys": "D:/Project/AutoPlayGame/MFAAvalonia-v2.11.8-win-x64/assets/resource/model/ocr/keys.txt",
+    "algorithm": "PaddleOCR",
+    "engine": {
+        "provider": "CPU",
+        "optimization": "AVX2"
+    }
+}

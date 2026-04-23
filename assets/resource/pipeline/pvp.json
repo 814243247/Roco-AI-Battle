@@ -1,0 +1,6 @@
+{
+    "PvPAction": {
+        "action": "Custom",
+        "custom_action": "PvPAction"
+    }
+}

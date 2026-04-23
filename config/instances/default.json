@@ -1,0 +1,50 @@
+{
+  "CurrentControllerName": "Win32",
+  "Resource": "默认",
+  "CurrentTasks": [
+    "自定义程序<|||>CustomProgramAction",
+    "循环战斗<|||>AutoBattleTask"
+  ],
+  "TaskItems": [
+    {
+      "name": "自定义程序",
+      "entry": "CustomProgramAction",
+      "default_check": true,
+      "description": "SpecialTask_CustomProgramDesc",
+      "pipeline_override": {
+        "CustomProgramAction": {
+          "action": "Custom",
+          "custom_action": "CustomProgramAction",
+          "custom_action_param": {
+            "program": "python",
+            "arguments": "D:\\Project\\AutoPlayGame\\MFAAvalonia-v2.11.8-win-x64\\roco_pvp_ai.py",
+            "wait_for_exit": false
+          }
+        }
+      }
+    },
+    {
+      "name": "自定义程序",
+      "remark": "战斗",
+      "entry": "CustomProgramAction",
+      "default_check": false,
+      "description": "SpecialTask_CustomProgramDesc",
+      "pipeline_override": {
+        "CustomProgramAction": {
+          "action": "Custom",
+          "custom_action": "CustomProgramAction",
+          "custom_action_param": {
+            "program": "python",
+            "arguments": "D:\\Project\\AutoPlayGame\\RocoAutomation\\roco_mvp.py",
+            "wait_for_exit": false
+          }
+        }
+      }
+    }
+  ],
+  "InstanceName": "配置 1",
+  "CurrentController": "Win32",
+  "DesktopWindowClassName": "UnrealWindow",
+  "DesktopWindowName": "洛克王国：世界  ",
+  "ResourceOptionItems": {}
+}

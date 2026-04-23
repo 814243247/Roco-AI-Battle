@@ -1,0 +1,10 @@
+{
+    "DebugTask": {
+        "next": [
+            "Stop"
+        ]
+    },
+    "Stop": {
+        "action": "DoNothing"
+    }
+}

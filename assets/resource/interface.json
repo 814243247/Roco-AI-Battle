@@ -1,0 +1,13 @@
+{
+    "version": 2,
+    "resource": {
+        "resolution": [ 1920, 1080 ],
+        "model": {
+            "ocr": {
+                "det": "model/ocr/det.onnx",
+                "rec": "model/ocr/rec.onnx",
+                "keys": "model/ocr/keys.txt"
+            }
+        }
+    }
+}

@@ -1,0 +1,6 @@
+{
+    "AutoBattleTask": {
+        "action": "Custom",
+        "custom_action": "AutoBattleAction"
+    }
+}

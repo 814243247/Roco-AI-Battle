@@ -1,0 +1,21 @@
+{
+    "spark_appid": "4098e952",
+    "spark_apikey": "8c48283a79a29261b359ce432dc3f6f6",
+    "spark_apisecret": "NGNhNzE0ZmY5NjBjYzYzODM3NGJjOThi",
+    "spark_url": "wss://spark-api.xf-yun.com/x2",
+    "spark_domain": "spark-x",
+    "spark_maas_apikey": "8c48283a79a29261b359ce432dc3f6f6:NGNhNzE0ZmY5NjBjYzYzODM3NGJjOThi",
+    "spark_maas_model_id": "xop35qwen2b",
+    "spark_maas_base_url": "https://maas-api.cn-huabei-1.xf-yun.com/v2",
+    "gemini_apikey": "AIzaSyCxIPsxzBrcDvYB4zDZhdFuVoTUrHK16eE",
+    "gemini_model_id": "gemma-3-27b-it",
+    "doubao_api_key": "8ab38e7e-9005-487e-afae-9299649b17fe",
+    "doubao_model_id": "doubao-seed-2-0-lite-260215",
+    "ollama_base_url": "http://127.0.0.1:11434",
+    "ollama_model_id": "qwen3.5:4b",
+    "ollama_no_think": true,
+    "current_engine": "gemini",
+    "http_proxy": "http://127.0.0.1:7890",
+    "max_tokens": 4048,
+    "temperature": 0.5
+}

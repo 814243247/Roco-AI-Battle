@@ -1,0 +1,33 @@
+{
+  "name": "Debug",
+  "version": "1.0",
+  "resource": [
+    {
+      "name": "默认",
+      "path": [
+        "{PROJECT_DIR}/resource/base"
+      ],
+      "DisplayName": "",
+      "DisplayDescription": ""
+    }
+  ],
+  "task": [],
+  "option": {
+    "测试": {
+      "cases": [
+        {
+          "name": "测试1",
+          "pipeline_override": {},
+          "DisplayName": "",
+          "DisplayDescription": ""
+        },
+        {
+          "name": "测试2",
+          "pipeline_override": {},
+          "DisplayName": "",
+          "DisplayDescription": ""
+        }
+      ]
+    }
+  }
+}
