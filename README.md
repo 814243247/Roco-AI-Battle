@@ -117,20 +117,32 @@ pip install lancedb numpy flask flask-socketio
 
 支持的引擎：`gemini`、`ollama`、`doubao`、`spark_maas`、`spark_ws`
 
-### 3. RAG 数据库说明
+### 3. 配置本地向量加速引擎 (必需)
+
+本项目采用 `llama.cpp` 配合本地 `.gguf` 模型进行高性能的 RAG 语义搜索加速。在开始运行主程序之前，请先配置它：
+
+```bash
+# 1. 下载向量模型 (约 90MB，会自动放入 models 文件夹)
+python scripts/download_vector_model.py
+
+# 2. 自动检测您的显卡（N卡/A卡/Intel）并安装 GPU 加速引擎
+python scripts/setup_llama_cpp.py
+```
+
+### 4. RAG 数据库说明
 
 本项目已经**内置并集成了完整的 LanceDB 向量数据库**数据（位于 `scripts/rag_lancedb/`），包含了精灵、技能和战斗策略的语义向量索引。
 
 您**不需要**手动生成或导出即可直接使用 RAG 语义召回功能。
 *(仅当您修改了 `config/` 下的 JSON 数据源时，才需要运行 `python scripts/sync_rag_strategies.py` 等脚本重新生成索引)*。
 
-### 4. 启动知识图谱（可选）
+### 5. 启动知识图谱（可选）
 
 ```bash
 web/启动知识图谱.bat
 ```
 
-### 5. 运行主程序
+### 6. 运行主程序
 
 项目支持两种启动方式：
 
