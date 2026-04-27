@@ -17,7 +17,7 @@
 ## 项目结构
 
 ```
-MFAAvalonia-v2.11.8-win-x64/
+Roco-AI-Battle/
 ├── ai_life/                         # AI 开发日志
 ├── config/                          # 配置文件目录
 │   ├── ai_config.json               # AI 引擎配置（模型选择、API 密钥）
@@ -27,6 +27,8 @@ MFAAvalonia-v2.11.8-win-x64/
 │   └── instances/default.json       # 默认实例配置
 ├── scripts/                         # Python 脚本工具
 │   ├── rag_lancedb/                 # LanceDB 向量数据库
+│   ├── download_vector_model.py     # 下载本地向量模型脚本
+│   ├── setup_llama_cpp.py           # 自动配置 GPU 加速环境脚本
 │   ├── sync_rag_strategies.py       # 同步策略到向量库
 │   └── check_types.py               # 属性类型校验工具
 ├── web/                             # 知识图谱 Web 可视化
