@@ -2,3 +2,4 @@
 ai_life/
 __pycache__/
 *.pyc
+.trae/

@@ -3,8 +3,8 @@
 """
 
 import sys
+import os
 import time
-import requests
 import json
 import difflib
 from pathlib import Path
@@ -16,14 +16,13 @@ try:
 except ImportError:
     LANCEDB_AVAILABLE = False
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from roco_pvp_ai import simple_text_to_vector
+
 # --- 向量化逻辑 ---
-def get_ollama_embedding(text: str) -> list:
+def get_llama_cpp_embedding(text: str) -> list:
     try:
-        url = "http://127.0.0.1:11434/api/embeddings"
-        payload = {"model": "nomic-embed-text:latest", "prompt": text}
-        r = requests.post(url, json=payload, timeout=5)
-        if r.status_code == 200:
-            return r.json().get("embedding", [])
+        return simple_text_to_vector(text)
     except: pass
     return [0.0] * 768
 
@@ -48,14 +47,14 @@ class HybridSearchTester:
             ratio = difflib.SequenceMatcher(None, text, matches[0]).ratio()
             return {"name": matches[0], "source": "Fuzzy", "distance": 1.0 - ratio}
         
-        # 2. 第二路：语义召回 (Ollama)
+        # 2. 第二路：语义召回 (llama.cpp)
         if LANCEDB_AVAILABLE:
-            vec = get_ollama_embedding(text)
+            vec = get_llama_cpp_embedding(text)
             res = table.search(vec).limit(1).to_list()
             if res:
                 # LanceDB 默认返回的是 _distance
                 dist = res[0].get('_distance', 0.5)
-                return {"name": res[0]['name'], "source": "Ollama", "distance": float(dist)}
+                return {"name": res[0]['name'], "source": "llama.cpp", "distance": float(dist)}
         
         return {"name": "None", "source": "Failure", "distance": 1.0}
 

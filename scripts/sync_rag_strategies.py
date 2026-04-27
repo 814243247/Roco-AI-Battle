@@ -29,19 +29,8 @@ def simple_text_to_vector(text: str) -> List[float]:
         vector = vector / norm
     return vector.tolist()
 
-def get_ollama_embedding(text: str) -> List[float]:
-    """通过 Ollama 本地 API 获取向量，失败时回退到本地向量化"""
-    try:
-        url = "http://127.0.0.1:11434/api/embeddings"
-        payload = {"model": EMBED_MODEL, "prompt": text}
-        r = requests.post(url, json=payload, timeout=5)
-        if r.status_code == 200:
-            embedding = r.json().get("embedding", [])
-            if embedding and len(embedding) == 768:
-                return embedding
-    except Exception:
-        pass
-    # Ollama 不可用时使用本地向量化
+def get_llama_cpp_embedding(text: str) -> List[float]:
+    """强制使用本地向量化以加速同步"""
     return simple_text_to_vector(text)
 
 def load_strategy_data() -> List[Dict[str, Any]]:
@@ -81,7 +70,7 @@ def sync_strategies():
     records = []
     for i, strat in enumerate(strategies):
         doc = generate_strategy_text(strat)
-        vector = get_ollama_embedding(doc)
+        vector = get_llama_cpp_embedding(doc)
         records.append({
             "id": strat["id"],
             "category": strat["category"],

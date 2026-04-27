@@ -1,34 +1,32 @@
 """
-洛克王国世界 RAG 数据库创建工具（Ollama + LanceDB 版）
-使用本地 Ollama (nomic-embed-text) 模型生成高质量语义向量
 """
-
+洛克王国世界 RAG 数据库创建工具 (llama.cpp 版)
+使用本地 llama.cpp (如 nomic-embed-text.gguf) 模型生成高质量语义向量，支持 GPU 加速
+"""
+import os
+import sys
 import json
-import requests
-import time
+import numpy as np
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List
 
 try:
     import lancedb
-    import numpy as np
     LANCEDB_AVAILABLE = True
 except ImportError:
     LANCEDB_AVAILABLE = False
     print("[ERROR] 未安装 lancedb 或 numpy")
 
-EMBED_MODEL = "nomic-embed-text:latest"
+# 将根目录加入路径以引入 EmbeddingClient
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from roco_pvp_ai import simple_text_to_vector
 
-def get_ollama_embedding(text: str) -> List[float]:
-    """通过 Ollama 本地 API 获取向量"""
+def get_llama_cpp_embedding(text: str) -> List[float]:
+    """通过 llama.cpp 获取向量"""
     try:
-        url = "http://127.0.0.1:11434/api/embeddings"
-        payload = {"model": EMBED_MODEL, "prompt": text}
-        r = requests.post(url, json=payload, timeout=15)
-        if r.status_code == 200:
-            return r.json().get("embedding", [])
+        return simple_text_to_vector(text)
     except Exception as e:
-        print(f"  [Error] Ollama 向量化失败: {e}")
+        print(f"  [Error] llama.cpp 向量化失败: {e}")
     return [0.0] * 768 # 默认维度
 
 def load_pet_database() -> List[Dict[str, Any]]:
@@ -63,7 +61,7 @@ def create_rag_database():
     pet_records = []
     for i, pet in enumerate(pets):
         doc = generate_pet_text(pet)
-        vector = get_ollama_embedding(doc)
+        vector = get_llama_cpp_embedding(doc)
         pet_records.append({
             "id": pet["id"], "name": pet["name"], "type": pet.get("type", "unknown"),
             "text": doc, "vector": vector
@@ -79,7 +77,7 @@ def create_rag_database():
     skill_records = []
     for i, skill in enumerate(skills):
         doc = generate_skill_text(skill)
-        vector = get_ollama_embedding(doc)
+        vector = get_llama_cpp_embedding(doc)
         skill_records.append({
             "id": skill["id"], "name": skill["name"], "power": skill.get("power", 0),
             "text": doc, "vector": vector

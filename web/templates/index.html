@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>洛克王国世界 - 知识图谱</title>
+<script type="text/javascript" src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bg-deep: #060a13;
+    --bg-main: #0a0f1e;
+    --bg-card: rgba(15, 23, 42, 0.65);
+    --bg-card-hover: rgba(20, 30, 55, 0.8);
+    --border-subtle: rgba(59, 130, 246, 0.1);
+    --border-glow: rgba(59, 130, 246, 0.25);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #475569;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-cyan: #06b6d4;
+    --gradient-main: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+    --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    --gradient-cool: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.08);
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+    font-family:'Inter','Microsoft YaHei','Segoe UI',sans-serif;
+    background:var(--bg-deep);
+    color:var(--text-primary);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+}
+
+#app{display:flex;height:100vh}
+
+/* ===== SIDEBAR ===== */
+#sidebar{
+    width:340px;min-width:340px;
+    background:linear-gradient(180deg, rgba(10,15,30,0.98) 0%, rgba(8,12,24,0.98) 100%);
+    border-right:1px solid var(--border-subtle);
+    display:flex;flex-direction:column;
+    overflow-y:auto;overflow-x:hidden;
+    z-index:10;
+    position:relative;
+}
+#sidebar::after{
+    content:'';position:absolute;top:0;right:0;width:1px;height:100%;
+    background:linear-gradient(180deg, transparent, var(--accent-blue), var(--accent-purple), transparent);
+    opacity:0.3;
+}
+#sidebar::-webkit-scrollbar{width:4px}
+#sidebar::-webkit-scrollbar-track{background:transparent}
+#sidebar::-webkit-scrollbar-thumb{background:rgba(59,130,246,0.2);border-radius:4px}
+#sidebar::-webkit-scrollbar-thumb:hover{background:rgba(59,130,246,0.4)}
+
+/* Header */
+.sidebar-header{
+    padding:28px 20px 20px;
+    background:linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(139,92,246,0.06) 50%, rgba(6,182,212,0.04) 100%);
+    border-bottom:1px solid var(--border-subtle);
+    position:relative;
+    overflow:hidden;
+}
+.sidebar-header::before{
+    content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+    background:radial-gradient(circle at 30% 50%, rgba(59,130,246,0.04) 0%, transparent 50%);
+    animation:headerGlow 8s ease-in-out infinite;
+}
+@keyframes headerGlow{
+    0%,100%{transform:translate(0,0)}
+    50%{transform:translate(5%,0)}
+}
+.sidebar-header .logo{
+    display:flex;align-items:center;gap:10px;margin-bottom:6px;
+    position:relative;z-index:1;
+}
+.sidebar-header .logo-icon{
+    width:36px;height:36px;border-radius:10px;
+    background:var(--gradient-main);
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;
+    box-shadow:0 4px 12px rgba(59,130,246,0.3);
+}
+.sidebar-header h1{
+    font-size:17px;font-weight:700;
+    background:var(--gradient-main);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    letter-spacing:-0.3px;
+}
+.sidebar-header p{
+    font-size:11px;color:var(--text-muted);
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    position:relative;z-index:1;
+    margin-top:2px;
+}
+
+/* Stats Grid */
+.stats-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;
+    padding:16px 16px 12px;
+}
+.stat-card{
+    background:var(--bg-card);
+    border-radius:var(--radius-md);
+    padding:14px 10px 12px;
+    text-align:center;
+    border:1px solid var(--border-subtle);
+    position:relative;
+    overflow:hidden;
+    transition:all var(--transition-normal);
+    cursor:default;
+}
+.stat-card:hover{
+    border-color:var(--border-glow);
+    background:var(--bg-card-hover);
+    transform:translateY(-1px);
+    box-shadow:var(--shadow-glow);
+}
+.stat-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    opacity:0;transition:opacity var(--transition-normal);
+}
+.stat-card:hover::before{opacity:1}
+.stat-card:nth-child(1)::before{background:var(--gradient-cool)}
+.stat-card:nth-child(2)::before{background:linear-gradient(90deg,#f59e0b,#ef4444)}
+.stat-card:nth-child(3)::before{background:linear-gradient(90deg,#8b5cf6,#ec4899)}
+.stat-card:nth-child(4)::before{background:var(--gradient-main)}
+.stat-card .value{
+    font-size:26px;font-weight:700;
+    background:var(--gradient-main);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    line-height:1.2;
+}
+.stat-card .label{
+    font-size:10px;color:var(--text-muted);
+    margin-top:3px;letter-spacing:1.5px;
+    text-transform:uppercase;font-weight:500;
+}
+
+/* Search */
+.search-box{padding:8px 16px 12px;border-bottom:1px solid var(--border-subtle)}
+.search-wrap{position:relative}
+.search-wrap .search-icon{
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    color:var(--text-muted);font-size:13px;pointer-events:none;
+    transition:color var(--transition-fast);
+}
+.search-wrap input{
+    width:100%;padding:10px 14px 10px 36px;
+    background:rgba(15,23,42,0.5);
+    border:1px solid var(--border-subtle);
+    border-radius:var(--radius-md);
+    color:var(--text-primary);font-size:12px;
+    outline:none;transition:all var(--transition-normal);
+    font-family:inherit;
+}
+.search-wrap input:focus{
+    border-color:var(--accent-blue);
+    box-shadow:0 0 0 3px rgba(59,130,246,0.1);
+    background:rgba(15,23,42,0.7);
+}
+.search-wrap input:focus ~ .search-icon{color:var(--accent-blue)}
+.search-wrap input::placeholder{color:var(--text-muted)}
+
+/* Section */
+.section{
+    padding:12px 16px;
+    border-bottom:1px solid rgba(59,130,246,0.05);
+}
+.section-title{
+    font-size:9px;color:var(--text-muted);
+    margin-bottom:8px;
+    text-transform:uppercase;letter-spacing:2px;
+    font-weight:600;
+    display:flex;align-items:center;gap:6px;
+}
+.section-title::before{
+    content:'';width:3px;height:10px;border-radius:2px;
+    background:var(--gradient-main);
+}
+
+/* Mode Buttons */
+.mode-btns{display:flex;gap:6px}
+.mode-btn{
+    flex:1;padding:8px 0;border-radius:var(--radius-sm);
+    font-size:11px;font-weight:500;cursor:pointer;
+    border:1px solid var(--border-subtle);
+    background:var(--bg-card);color:var(--text-muted);
+    text-align:center;transition:all var(--transition-normal);
+    user-select:none;font-family:inherit;
+}
+.mode-btn:hover{
+    border-color:var(--border-glow);color:var(--text-secondary);
+    background:var(--bg-card-hover);
+}
+.mode-btn.active{
+    background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(139,92,246,0.15));
+    border-color:var(--border-glow);color:var(--text-primary);
+    box-shadow:0 0 12px rgba(59,130,246,0.1);
+}
+
+/* Filter Tags */
+.filter-tags{display:flex;flex-wrap:wrap;gap:5px}
+.filter-tag{
+    padding:4px 10px;border-radius:20px;
+    font-size:10px;font-weight:500;cursor:pointer;
+    border:1px solid var(--border-subtle);
+    background:var(--bg-card);color:var(--text-muted);
+    transition:all var(--transition-fast);user-select:none;
+    font-family:inherit;
+}
+.filter-tag:hover{
+    border-color:var(--border-glow);color:var(--text-secondary);
+    transform:translateY(-1px);
+}
+.filter-tag.active{
+    background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(139,92,246,0.15));
+    border-color:var(--border-glow);color:var(--text-primary);
+}
+.filter-tag .count{
+    font-size:9px;opacity:0.5;margin-left:3px;
+    font-weight:400;
+}
+
+/* Detail Panel */
+#detail-panel{
+    padding:16px;
+    border-top:1px solid var(--border-subtle);
+    flex:1;overflow-y:auto;
+}
+#detail-panel h3{
+    font-size:15px;color:var(--accent-blue);
+    margin-bottom:10px;font-weight:600;
+    display:flex;align-items:center;gap:8px;
+}
+#detail-panel h3::before{
+    content:'';width:4px;height:16px;border-radius:2px;
+    background:var(--gradient-main);flex-shrink:0;
+}
+
+.detail-card{
+    background:var(--bg-card);
+    border-radius:var(--radius-md);
+    padding:12px;
+    border:1px solid var(--border-subtle);
+    margin-bottom:8px;
+    transition:all var(--transition-fast);
+}
+.detail-card:hover{
+    border-color:var(--border-glow);
+}
+
+.detail-row{
+    display:flex;align-items:flex-start;
+    padding:4px 0;font-size:11px;line-height:1.6;
+}
+.detail-key{
+    color:var(--text-muted);min-width:52px;flex-shrink:0;
+    font-weight:500;font-size:10px;
+}
+.detail-val{color:var(--text-primary);word-break:break-all}
+.detail-val.accent{color:var(--accent-blue)}
+.detail-val.warn{color:#f59e0b}
+.detail-val.danger{color:#ef4444}
+.detail-val.purple{color:var(--accent-purple)}
+.detail-divider{
+    height:1px;
+    background:linear-gradient(90deg,transparent,var(--border-subtle),transparent);
+    margin:8px 0;
+}
+
+.stat-bar-wrap{margin:3px 0}
+.stat-bar-label{
+    font-size:9px;color:var(--text-muted);
+    display:flex;justify-content:space-between;
+    font-weight:500;
+}
+.stat-bar{
+    height:4px;background:rgba(30,41,59,0.8);
+    border-radius:4px;overflow:hidden;margin-top:2px;
+}
+.stat-bar-fill{
+    height:100%;border-radius:4px;
+    transition:width 0.6s cubic-bezier(0.4,0,0.2,1);
+}
+
+.hint-text{
+    font-size:10px;color:var(--text-muted);line-height:1.8;
+    padding:4px 0;
+}
+.hint-text b{color:var(--accent-blue);font-weight:500}
+
+/* ===== GRAPH AREA ===== */
+#graph-container{
+    flex:1;position:relative;
+    background:
+        radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 50%, rgba(139,92,246,0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at center, #0d1525 0%, var(--bg-deep) 70%);
+}
+#graph-canvas{width:100%;height:100%}
+
+/* Toolbar */
+.toolbar{
+    position:absolute;top:16px;right:16px;
+    display:flex;gap:6px;z-index:5;
+}
+.toolbar button{
+    width:36px;height:36px;
+    background:rgba(10,15,30,0.8);
+    border:1px solid var(--border-subtle);
+    border-radius:var(--radius-sm);
+    color:var(--text-muted);cursor:pointer;
+    font-size:14px;
+    transition:all var(--transition-normal);
+    backdrop-filter:blur(12px);
+    display:flex;align-items:center;justify-content:center;
+    font-family:inherit;
+}
+.toolbar button:hover{
+    background:rgba(59,130,246,0.15);
+    border-color:var(--border-glow);
+    color:var(--text-primary);
+    transform:translateY(-1px);
+    box-shadow:0 4px 12px rgba(59,130,246,0.15);
+}
+.toolbar button.active{
+    background:rgba(59,130,246,0.2);
+    border-color:var(--accent-blue);
+    color:var(--accent-blue);
+}
+
+/* Sync Indicator */
+.sync-indicator{
+    position:absolute;top:16px;left:16px;
+    display:flex;align-items:center;gap:6px;
+    font-size:10px;color:var(--text-muted);z-index:5;
+    background:rgba(10,15,30,0.8);
+    padding:6px 12px;border-radius:20px;
+    backdrop-filter:blur(12px);
+    border:1px solid var(--border-subtle);
+    font-weight:500;
+}
+.sync-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:#22c55e;
+    box-shadow:0 0 6px rgba(34,197,94,0.5);
+    animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+.sync-dot.disconnected{
+    background:#ef4444;
+    box-shadow:0 0 6px rgba(239,68,68,0.5);
+    animation:none;
+}
+
+/* Legend */
+.legend{
+    position:absolute;bottom:16px;left:16px;
+    background:rgba(10,15,30,0.85);
+    border:1px solid var(--border-subtle);
+    border-radius:var(--radius-md);
+    padding:10px 14px;
+    backdrop-filter:blur(12px);z-index:5;
+}
+.legend h4{
+    font-size:9px;color:var(--text-muted);
+    margin-bottom:6px;text-transform:uppercase;
+    letter-spacing:1.5px;font-weight:600;
+}
+.legend-items{display:flex;flex-wrap:wrap;gap:10px}
+.legend-item{
+    display:flex;align-items:center;gap:4px;
+    font-size:9px;color:var(--text-secondary);
+    font-weight:500;
+}
+.legend-dot{width:8px;height:8px;border-radius:50%;box-shadow:0 0 4px currentColor}
+.legend-line{width:16px;height:2px;border-radius:1px}
+
+/* Info Badge */
+.info-badge{
+    position:absolute;bottom:16px;right:16px;
+    background:rgba(10,15,30,0.85);
+    border:1px solid var(--border-subtle);
+    border-radius:var(--radius-md);
+    padding:8px 14px;
+    backdrop-filter:blur(12px);z-index:5;
+    font-size:11px;color:var(--text-muted);
+    font-weight:500;
+}
+.info-badge span{color:var(--accent-blue);font-weight:700}
+
+/* Loading */
+.loading-overlay{
+    position:absolute;top:0;left:0;right:0;bottom:0;
+    background:rgba(6,10,19,0.92);
+    display:flex;align-items:center;justify-content:center;
+    z-index:20;flex-direction:column;gap:16px;
+    backdrop-filter:blur(8px);
+}
+.loading-spinner{
+    width:40px;height:40px;
+    border:3px solid rgba(59,130,246,0.1);
+    border-top-color:var(--accent-blue);
+    border-radius:50%;
+    animation:spin 0.8s linear infinite;
+    box-shadow:0 0 20px rgba(59,130,246,0.1);
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{
+    color:var(--text-muted);font-size:12px;
+    letter-spacing:1px;font-weight:500;
+}
+
+/* Expand Hint */
+.expand-hint{
+    position:absolute;top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    background:rgba(10,15,30,0.95);
+    border:1px solid var(--border-glow);
+    border-radius:var(--radius-lg);
+    padding:20px 28px;z-index:15;
+    text-align:center;
+    backdrop-filter:blur(16px);display:none;
+    box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+.expand-hint p{font-size:12px;color:var(--text-secondary);margin:4px 0}
+.expand-hint .key{color:var(--accent-blue);font-weight:600}
+
+/* Animations */
+@keyframes fadeIn{
+    from{opacity:0;transform:translateY(8px)}
+    to{opacity:1;transform:translateY(0)}
+}
+.stat-card{animation:fadeIn 0.4s ease backwards}
+.stat-card:nth-child(1){animation-delay:0.05s}
+.stat-card:nth-child(2){animation-delay:0.1s}
+.stat-card:nth-child(3){animation-delay:0.15s}
+.stat-card:nth-child(4){animation-delay:0.2s}
+
+@keyframes slideIn{
+    from{opacity:0;transform:translateX(-12px)}
+    to{opacity:1;transform:translateX(0)}
+}
+.section{animation:slideIn 0.3s ease backwards}
+.section:nth-of-type(1){animation-delay:0.1s}
+.section:nth-of-type(2){animation-delay:0.15s}
+.section:nth-of-type(3){animation-delay:0.2s}
+.section:nth-of-type(4){animation-delay:0.25s}
+</style>
+</head>
+<body>
+<div id="app">
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">⚔</div>
+                <h1>洛克王国世界 知识图谱</h1>
+            </div>
+            <p>属性克制 · 宠物 · 技能 · 策略</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="value" id="stat-pets">-</div><div class="label">宠物</div></div>
+            <div class="stat-card"><div class="value" id="stat-skills">-</div><div class="label">技能</div></div>
+            <div class="stat-card"><div class="value" id="stat-strats">-</div><div class="label">策略</div></div>
+            <div class="stat-card"><div class="value" id="stat-types">-</div><div class="label">属性</div></div>
+        </div>
+
+        <div class="search-box">
+            <div class="search-wrap">
+                <input type="text" id="search-input" placeholder="搜索宠物 / 技能 / 策略...">
+                <span class="search-icon">⌕</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">视图模式</div>
+            <div class="mode-btns">
+                <div class="mode-btn active" data-mode="overview" onclick="switchMode('overview')">概览</div>
+                <div class="mode-btn" data-mode="full" onclick="switchMode('full')">全量</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">关系类型</div>
+            <div class="filter-tags" id="edge-filters">
+                <div class="filter-tag active" data-edge="all">全部</div>
+                <div class="filter-tag" data-edge="克制">克制</div>
+                <div class="filter-tag" data-edge="抵抗">抵抗</div>
+                <div class="filter-tag" data-edge="属于">属于</div>
+                <div class="filter-tag" data-edge="弱点">弱点</div>
+                <div class="filter-tag" data-edge="涉及">涉及</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">属性筛选</div>
+            <div class="filter-tags" id="attr-filters"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">策略类别</div>
+            <div class="filter-tags" id="cat-filters"></div>
+        </div>
+
+        <div id="detail-panel">
+            <h3>节点详情</h3>
+            <div class="hint-text">
+                <p>💡 <b>双击</b>属性/策略类别节点可展开子节点</p>
+                <p>💡 <b>右键</b>已展开节点可折叠</p>
+                <p>💡 概览模式仅显示属性与类别，速度更快</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="graph-container">
+        <div id="graph-canvas"></div>
+
+        <div class="sync-indicator">
+            <div class="sync-dot" id="sync-dot"></div>
+            <span id="sync-status">实时同步中</span>
+        </div>
+
+        <div class="toolbar">
+            <button onclick="resetView()" title="重置视图">⊞</button>
+            <button id="btn-physics" onclick="togglePhysics()" title="物理引擎" class="active">⚛</button>
+            <button onclick="refreshData()" title="刷新">↻</button>
+            <button onclick="collapseAll()" title="折叠全部">⊟</button>
+        </div>
+
+        <div class="legend">
+            <h4>图例</h4>
+            <div class="legend-items" id="legend-items"></div>
+        </div>
+
+        <div class="info-badge" id="node-count">
+            <span id="visible-nodes">0</span> 节点 · <span id="visible-edges">0</span> 边
+        </div>
+
+        <div class="loading-overlay" id="loading">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">正在构建知识图谱...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+let network = null;
+let graphData = null;
+let allNodes = null;
+let allEdges = null;
+let physicsEnabled = true;
+let socket = null;
+let currentMode = "overview";
+let expandedNodes = new Set();
+let activeFilters = { edge: "all", attr: "all", cat: "all" };
+
+const TYPE_COLORS_MAP = {
+    "普通":"#A8A878","火":"#F08030","水":"#6890F0","草":"#78C850","电":"#F8D030",
+    "冰":"#98D8D8","武":"#C03028","毒":"#A040A0","地":"#E0C068","翼":"#A890F0",
+    "超能":"#F85888","虫":"#A8B820","岩":"#B8A038","幽":"#705898","龙":"#7038F8",
+    "恶":"#705848","机械":"#B8B8D0","萌":"#EE99AC","光":"#FFD700","幻":"#DA70D6","神系":"#FF6347"
+};
+
+const CATEGORY_COLORS_MAP = {
+    "属性优势":"#4CAF50","属性劣势":"#F44336","换宠策略":"#2196F3",
+    "HP策略":"#FF9800","血量策略":"#FF9800","能量策略":"#9C27B0",
+    "宠物策略":"#00BCD4","技能策略":"#FF5722","状态策略":"#795548",
+    "反制策略":"#607D8B","高阶策略":"#E91E63","进阶策略":"#E91E63",
+    "印记策略":"#AB47BC","阵容协同":"#26A69A","控制策略":"#5C6BC0"
+};
+
+const EDGE_TYPE_COLORS = {
+    "克制":"#ef4444","抵抗":"#3b82f6","属于":"#475569","副属性":"#64748b",
+    "弱点":"#f87171","涉及":"#64748b","属于类别":"#8b5cf6"
+};
+
+function hexToRgba(hex, alpha) {
+    if (!hex || hex.startsWith("rgba")) return hex;
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function buildVisNode(n) {
+    const shapeMap = {"属性":"diamond","宠物":"dot","技能":"triangle","策略类别":"square","策略":"triangleDown"};
+    const baseSize = {"属性":40,"宠物":20,"技能":14,"策略类别":30,"策略":12};
+    const fontSize = {"属性":13,"宠物":10,"技能":9,"策略类别":11,"策略":9};
+    const isExpanded = expandedNodes.has(n.id);
+    const isCluster = n.type === "属性" || n.type === "策略类别";
+
+    let label = n.label;
+    if (isCluster && !isExpanded) {
+        if (n.type === "属性") {
+            const count = (graphData && graphData.stats && graphData.stats.type_pet_counts && graphData.stats.type_pet_counts[n.label]) || 0;
+            if (count > 0) label = `${n.label} (${count})`;
+        } else if (n.type === "策略类别") {
+            const count = (graphData && graphData.stats && graphData.stats.cat_strat_counts && graphData.stats.cat_strat_counts[n.label]) || 0;
+            if (count > 0) label = `${n.label} (${count})`;
+        }
+    }
+
+    return {
+        id: n.id,
+        label: label,
+        shape: isExpanded && isCluster ? "hexagon" : (shapeMap[n.type] || "dot"),
+        size: isExpanded && isCluster ? (baseSize[n.type]||30) + 8 : (n.size || baseSize[n.type] || 20),
+        color: {
+            background: hexToRgba(n.color || "#60a5fa", isExpanded ? 0.9 : 0.7),
+            border: n.color || "#60a5fa",
+            highlight: { background: n.color || "#60a5fa", border: "#fff" },
+            hover: { background: hexToRgba(n.color || "#60a5fa", 0.85), border: "#fff" }
+        },
+        font: {
+            color: n.type === "属性" ? "#e2e8f0" : "#94a3b8",
+            size: fontSize[n.type] || 10,
+            face: "Inter, Microsoft YaHei",
+            strokeWidth: 2,
+            strokeColor: "rgba(6,10,19,0.9)"
+        },
+        borderWidth: n.type === "属性" ? 2 : 1,
+        title: buildTooltip(n),
+        rawNode: n
+    };
+}
+
+function buildVisEdge(e) {
+    const isDashed = e.style === "dashed" || e.style === "dotted";
+    const edgeColor = e.color || EDGE_TYPE_COLORS[e.type] || "#334155";
+    return {
+        from: e.source,
+        to: e.target,
+        label: e.label || "",
+        color: {
+            color: hexToRgba(edgeColor, isDashed ? 0.35 : 0.55),
+            highlight: edgeColor,
+            hover: edgeColor,
+            opacity: isDashed ? 0.35 : 0.55
+        },
+        width: e.width || 1,
+        arrows: e.type === "属于" || e.type === "属于类别" || e.type === "副属性" ? undefined : { to: { enabled: true, scaleFactor: 0.3 } },
+        dashes: isDashed,
+        font: {
+            color: "#475569",
+            size: 7,
+            face: "Inter, Microsoft YaHei",
+            strokeWidth: 2,
+            strokeColor: "rgba(6,10,19,0.9)",
+            align: "middle"
+        },
+        smooth: false,
+        rawEdge: e
+    };
+}
+
+function buildTooltip(node) {
+    let html = `<div style="font-family:Inter,Microsoft YaHei;padding:6px 8px;max-width:280px">`;
+    html += `<div style="font-size:14px;font-weight:600;color:${node.color||'#3b82f6'};margin-bottom:4px">${node.label}</div>`;
+    html += `<div style="font-size:10px;color:#64748b;margin-bottom:4px">${node.type}${node.group&&node.group!==node.type?' · '+node.group:''}</div>`;
+    if (node.type === "属性" || node.type === "策略类别") {
+        html += `<div style="font-size:10px;color:#3b82f6;margin-top:3px">双击展开 · 右键折叠</div>`;
+    }
+    if (node.full_scenario) html += `<div style="font-size:10px;color:#94a3b8;margin:3px 0">场景: ${node.full_scenario}</div>`;
+    if (node.action) html += `<div style="font-size:10px;color:#3b82f6;margin:3px 0">建议: ${node.action}</div>`;
+    if (node.effect) html += `<div style="font-size:10px;color:#94a3b8;margin:3px 0">效果: ${node.effect}</div>`;
+    if (node.power) html += `<div style="font-size:10px;color:#f59e0b">威力: ${node.power}</div>`;
+    html += `</div>`;
+    return html;
+}
+
+function initNetwork(data) {
+    const container = document.getElementById("graph-canvas");
+    const nodes = new vis.DataSet(data.nodes.map(buildVisNode));
+    const edges = new vis.DataSet(data.edges.map(buildVisEdge));
+    allNodes = nodes;
+    allEdges = edges;
+
+    const options = {
+        nodes: { chosen: true },
+        edges: { chosen: true },
+        physics: {
+            enabled: true,
+            solver: "forceAtlas2Based",
+            forceAtlas2Based: {
+                gravitationalConstant: -80,
+                centralGravity: 0.01,
+                springLength: 120,
+                springConstant: 0.08,
+                damping: 0.4
+            },
+            stabilization: {
+                enabled: true,
+                iterations: 80,
+                updateInterval: 50,
+                fit: true
+            }
+        },
+        interaction: {
+            hover: true,
+            tooltipDelay: 200,
+            navigationButtons: false,
+            keyboard: { enabled: true },
+            multiselect: false
+        },
+        layout: { improvedLayout: true }
+    };
+
+    network = new vis.Network(container, { nodes, edges }, options);
+
+    network.on("doubleClick", function(params) {
+        if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const nodeData = allNodes.get(nodeId);
+            if (nodeData && nodeData.rawNode) {
+                const raw = nodeData.rawNode;
+                if (raw.type === "属性" || raw.type === "策略类别") {
+                    if (expandedNodes.has(nodeId)) {
+                        collapseNode(nodeId);
+                    } else {
+                        expandNode(nodeId);
+                    }
+                }
+            }
+        }
+    });
+
+    network.on("oncontext", function(params) {
+        params.event.preventDefault();
+        const nodeId = network.getNodeAt(params.pointer.DOM);
+        if (nodeId && expandedNodes.has(nodeId)) {
+            collapseNode(nodeId);
+        }
+    });
+
+    network.on("click", function(params) {
+        if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const nodeData = allNodes.get(nodeId);
+            if (nodeData && nodeData.rawNode) {
+                showDetail(nodeData.rawNode);
+            }
+        }
+    });
+
+    network.on("stabilizationIterationsDone", function() {
+        document.getElementById("loading").style.display = "none";
+        updateCounts();
+        if (physicsEnabled) {
+            setTimeout(() => {
+                if (network) network.setOptions({ physics: { enabled: false } });
+                physicsEnabled = false;
+                document.getElementById("btn-physics").classList.remove("active");
+            }, 2000);
+        }
+    });
+}
+
+function expandNode(nodeId) {
+    if (expandedNodes.has(nodeId)) return;
+    expandedNodes.add(nodeId);
+    document.getElementById("loading").style.display = "flex";
+    document.querySelector(".loading-text").textContent = "正在展开...";
+
+    fetch(`/api/expand/${encodeURIComponent(nodeId)}`)
+        .then(r => r.json())
+        .then(data => {
+            const newNodes = data.nodes.map(buildVisNode);
+            const newEdges = data.edges.map(buildVisEdge);
+
+            newNodes.forEach(n => {
+                try { allNodes.add(n); } catch(e) {}
+            });
+            newEdges.forEach(e => {
+                try { allEdges.add(e); } catch(e) {}
+            });
+
+            const nodeData = allNodes.get(nodeId);
+            if (nodeData) {
+                const raw = nodeData.rawNode;
+                const isCluster = raw.type === "属性" || raw.type === "策略类别";
+                let newLabel = raw.label;
+                if (isCluster) {
+                    if (raw.type === "属性") {
+                        const count = (graphData && graphData.stats && graphData.stats.type_pet_counts && graphData.stats.type_pet_counts[raw.label]) || 0;
+                        newLabel = `${raw.label} (${count})`;
+                    } else if (raw.type === "策略类别") {
+                        const count = (graphData && graphData.stats && graphData.stats.cat_strat_counts && graphData.stats.cat_strat_counts[raw.label]) || 0;
+                        newLabel = `${raw.label} (${count})`;
+                    }
+                }
+                allNodes.update({
+                    id: nodeId,
+                    shape: "hexagon",
+                    size: (raw.type === "属性" ? 48 : 38),
+                    label: newLabel
+                });
+            }
+
+            network.setOptions({ physics: { enabled: true, stabilization: { iterations: 30 } } });
+            physicsEnabled = true;
+            document.getElementById("btn-physics").classList.add("active");
+
+            document.getElementById("loading").style.display = "none";
+            updateCounts();
+        })
+        .catch(err => {
+            console.error("展开失败:", err);
+            document.getElementById("loading").style.display = "none";
+        });
+}
+
+function collapseNode(nodeId) {
+    if (!expandedNodes.has(nodeId)) return;
+    expandedNodes.delete(nodeId);
+
+    const childIds = new Set();
+    allEdges.forEach(e => {
+        if (e.from === nodeId || e.to === nodeId) {
+            const otherId = e.from === nodeId ? e.to : e.from;
+            const otherNode = allNodes.get(otherId);
+            if (otherNode && otherNode.rawNode && otherNode.rawNode.type !== "属性" && otherNode.rawNode.type !== "策略类别") {
+                childIds.add(otherId);
+            }
+        }
+    });
+
+    const edgesToRemove = [];
+    allEdges.forEach(e => {
+        if (childIds.has(e.from) || childIds.has(e.to)) {
+            edgesToRemove.push(e.id);
+        }
+    });
+    allEdges.remove(edgesToRemove);
+    allNodes.remove(Array.from(childIds));
+
+    const nodeData = allNodes.get(nodeId);
+    if (nodeData && nodeData.rawNode) {
+        const raw = nodeData.rawNode;
+        const shapeMap = {"属性":"diamond","策略类别":"square"};
+        allNodes.update({
+            id: nodeId,
+            shape: shapeMap[raw.type] || "dot",
+            size: raw.type === "属性" ? 40 : 30,
+            label: raw.label
+        });
+    }
+
+    updateCounts();
+}
+
+function collapseAll() {
+    const toCollapse = Array.from(expandedNodes);
+    toCollapse.forEach(id => collapseNode(id));
+}
+
+function showDetail(node) {
+    const panel = document.getElementById("detail-panel");
+    let html = `<h3 style="color:${node.color||'#3b82f6'}">${node.label}</h3>`;
+    html += `<div class="detail-card">`;
+    html += row("类型", node.type);
+    if (node.group && node.group !== node.type) html += row("分组", node.group);
+    if (node.type_cn) html += row("属性", `<span style="color:${TYPE_COLORS_MAP[node.type_cn]||'#999'}">${node.type_cn}系</span>`);
+    if (node.attack_type_cn) html += row("分类", node.attack_type_cn);
+    html += `</div>`;
+
+    if (node.full_scenario || node.action || node.rationale || node.source) {
+        html += `<div class="detail-card">`;
+        if (node.full_scenario) html += row("场景", node.full_scenario);
+        if (node.action) html += row("建议", node.action, "accent");
+        if (node.rationale) html += row("理由", node.rationale);
+        if (node.source) html += row("来源", node.source);
+        html += `</div>`;
+    }
+
+    if (node.effect || node.power || node.energy) {
+        html += `<div class="detail-card">`;
+        if (node.effect) html += row("效果", node.effect);
+        if (node.power) html += row("威力", node.power, "warn");
+        if (node.energy) html += row("能耗", "★".repeat(node.energy), "purple");
+        html += `</div>`;
+    }
+
+    if (node.stats) {
+        html += `<div class="detail-card">`;
+        const s = node.stats;
+        const total = Object.values(s).reduce((a,b)=>a+(b||0),0);
+        const maxStat = 200;
+        const statDefs = [
+            {key:"hp",label:"HP",color:"#ef4444"},
+            {key:"atk",label:"物攻",color:"#f59e0b"},
+            {key:"def",label:"物防",color:"#3b82f6"},
+            {key:"spatk",label:"特攻",color:"#f97316"},
+            {key:"spdef",label:"特防",color:"#8b5cf6"},
+            {key:"spd",label:"速度",color:"#22c55e"}
+        ];
+        statDefs.forEach(sd => {
+            const val = s[sd.key] || 0;
+            const pct = Math.min(val / maxStat * 100, 100);
+            html += `<div class="stat-bar-wrap">
+                <div class="stat-bar-label"><span>${sd.label}</span><span style="color:${sd.color}">${val}</span></div>
+                <div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${sd.color}"></div></div>
+            </div>`;
+        });
+        html += `<div class="detail-divider"></div>`;
+        html += row("种族值", total, "accent");
+        html += `</div>`;
+    }
+
+    if (node.weaknesses) {
+        const w = node.weaknesses;
+        html += `<div class="detail-card">`;
+        if (w.weak_to && w.weak_to.length) html += row("弱点", w.weak_to.join(" "), "danger");
+        if (w.resist && w.resist.length) html += row("抵抗", w.resist.join(" "), "accent");
+        if (w.immune && w.immune.length) html += row("免疫", w.immune.join(" "), "purple");
+        html += `</div>`;
+    }
+
+    panel.innerHTML = html;
+}
+
+function row(key, val, cls) {
+    return `<div class="detail-row"><span class="detail-key">${key}</span><span class="detail-val${cls?' '+cls:''}">${val}</span></div>`;
+}
+
+function updateStats(stats) {
+    if (!stats) return;
+    document.getElementById("stat-pets").textContent = stats.total_pets || 0;
+    document.getElementById("stat-skills").textContent = stats.total_skills || 0;
+    document.getElementById("stat-strats").textContent = stats.total_strategies || 0;
+    document.getElementById("stat-types").textContent = stats.type_count || 0;
+    buildAttrFilters(stats);
+    buildCatFilters(stats);
+}
+
+function updateCounts() {
+    if (!allNodes || !allEdges) return;
+    let vn = 0, ve = 0;
+    allNodes.forEach(n => { if (!n.hidden) vn++; });
+    allEdges.forEach(e => { if (!e.hidden) ve++; });
+    document.getElementById("visible-nodes").textContent = vn;
+    document.getElementById("visible-edges").textContent = ve;
+}
+
+function buildAttrFilters(stats) {
+    const container = document.getElementById("attr-filters");
+    if (!stats || !stats.type_pet_counts) return;
+    let html = `<div class="filter-tag active" data-attr="all">全部</div>`;
+    const types = Object.keys(TYPE_COLORS_MAP);
+    types.forEach(t => {
+        const count = stats.type_pet_counts[t] || 0;
+        if (count > 0) {
+            html += `<div class="filter-tag" data-attr="${t}" style="border-color:${hexToRgba(TYPE_COLORS_MAP[t],0.3)}">${t}<span class="count">${count}</span></div>`;
+        }
+    });
+    container.innerHTML = html;
+}
+
+function buildCatFilters(stats) {
+    const container = document.getElementById("cat-filters");
+    if (!stats || !stats.categories) return;
+    let html = `<div class="filter-tag active" data-cat="all">全部</div>`;
+    stats.categories.forEach(cat => {
+        const count = stats.cat_strat_counts ? (stats.cat_strat_counts[cat] || 0) : 0;
+        const color = CATEGORY_COLORS_MAP[cat] || "#999";
+        html += `<div class="filter-tag" data-cat="${cat}" style="border-color:${hexToRgba(color,0.3)}">${cat}<span class="count">${count}</span></div>`;
+    });
+    container.innerHTML = html;
+}
+
+function buildLegend() {
+    const items = [
+        {type:"dot",color:"#60a5fa",label:"属性"},
+        {type:"dot",color:"#78C850",label:"宠物"},
+        {type:"dot",color:"#FF5722",label:"技能"},
+        {type:"dot",color:"#8b5cf6",label:"策略"},
+        {type:"line",color:"#ef4444",label:"克制"},
+        {type:"line",color:"#3b82f6",label:"抵抗"},
+    ];
+    const container = document.getElementById("legend-items");
+    container.innerHTML = items.map(i => {
+        if (i.type === "dot") {
+            return `<div class="legend-item"><div class="legend-dot" style="background:${i.color};color:${i.color}"></div>${i.label}</div>`;
+        } else {
+            return `<div class="legend-item"><div class="legend-line" style="background:${i.color}"></div>${i.label}</div>`;
+        }
+    }).join("");
+}
+
+function switchMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll(".mode-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+    expandedNodes.clear();
+    loadGraph();
+}
+
+function applyEdgeFilter() {
+    if (!allEdges || !allNodes) return;
+    const edgeFilter = activeFilters.edge;
+
+    allEdges.forEach(e => {
+        const raw = e.rawEdge;
+        const show = edgeFilter === "all" || raw.type === edgeFilter;
+        allEdges.update({ id: e.id, hidden: !show });
+    });
+
+    if (edgeFilter !== "all") {
+        const visibleEdgeNodes = new Set();
+        allEdges.forEach(e => {
+            if (!e.hidden) {
+                visibleEdgeNodes.add(e.from);
+                visibleEdgeNodes.add(e.to);
+            }
+        });
+        allNodes.forEach(n => {
+            const raw = n.rawNode;
+            const isCluster = raw.type === "属性" || raw.type === "策略类别";
+            const show = visibleEdgeNodes.has(n.id) || isCluster;
+            allNodes.update({ id: n.id, hidden: !show });
+        });
+    } else {
+        allNodes.forEach(n => allNodes.update({ id: n.id, hidden: false }));
+    }
+
+    updateCounts();
+}
+
+function applyAttrFilter() {
+    if (!allNodes || !allEdges || !graphData) return;
+    const attrFilter = activeFilters.attr;
+    if (attrFilter === "all") {
+        allNodes.forEach(n => allNodes.update({ id: n.id, hidden: false }));
+        allEdges.forEach(e => allEdges.update({ id: e.id, hidden: false }));
+        updateCounts();
+        return;
+    }
+
+    const attrConnected = new Set();
+    attrConnected.add(`type_${attrFilter}`);
+    allEdges.forEach(e => {
+        const srcNode = allNodes.get(e.from);
+        const tgtNode = allNodes.get(e.to);
+        if (tgtNode && tgtNode.rawNode && tgtNode.rawNode.type === "属性" && tgtNode.rawNode.label === attrFilter) attrConnected.add(e.from);
+        if (srcNode && srcNode.rawNode && srcNode.rawNode.type === "属性" && srcNode.rawNode.label === attrFilter) attrConnected.add(e.to);
+    });
+
+    allNodes.forEach(n => {
+        const raw = n.rawNode;
+        const isCluster = raw.type === "属性" || raw.type === "策略类别";
+        let show = attrConnected.has(n.id) || (isCluster && raw.label === attrFilter);
+        if (isCluster && raw.label !== attrFilter) show = false;
+        allNodes.update({ id: n.id, hidden: !show });
+    });
+
+    allEdges.forEach(e => {
+        const srcVisible = !allNodes.get(e.from).hidden;
+        const tgtVisible = !allNodes.get(e.to).hidden;
+        allEdges.update({ id: e.id, hidden: !(srcVisible && tgtVisible) });
+    });
+
+    updateCounts();
+}
+
+function applyCatFilter() {
+    if (!allNodes || !allEdges || !graphData) return;
+    const catFilter = activeFilters.cat;
+    if (catFilter === "all") {
+        allNodes.forEach(n => allNodes.update({ id: n.id, hidden: false }));
+        allEdges.forEach(e => allEdges.update({ id: e.id, hidden: false }));
+        updateCounts();
+        return;
+    }
+
+    allNodes.forEach(n => {
+        const raw = n.rawNode;
+        let show = true;
+        if (raw.type === "策略" && raw.group !== catFilter) show = false;
+        if (raw.type === "策略类别" && raw.group !== catFilter) show = false;
+        if (raw.type === "属性") show = true;
+        if (raw.type === "宠物" || raw.type === "技能") show = true;
+        allNodes.update({ id: n.id, hidden: !show });
+    });
+
+    allEdges.forEach(e => {
+        const srcVisible = !allNodes.get(e.from).hidden;
+        const tgtVisible = !allNodes.get(e.to).hidden;
+        allEdges.update({ id: e.id, hidden: !(srcVisible && tgtVisible) });
+    });
+
+    updateCounts();
+}
+
+function resetView() {
+    if (network) network.fit({ animation: { duration: 400, easingFunction: "easeInOutQuad" } });
+}
+
+function togglePhysics() {
+    if (!network) return;
+    physicsEnabled = !physicsEnabled;
+    network.setOptions({ physics: { enabled: physicsEnabled } });
+    document.getElementById("btn-physics").classList.toggle("active", physicsEnabled);
+    if (physicsEnabled) {
+        setTimeout(() => {
+            if (network) network.setOptions({ physics: { enabled: false } });
+            physicsEnabled = false;
+            document.getElementById("btn-physics").classList.remove("active");
+        }, 3000);
+    }
+}
+
+function refreshData() {
+    fetch("/api/refresh", { method: "POST" }).then(r => r.json()).then(() => loadGraph());
+}
+
+function loadGraph() {
+    document.getElementById("loading").style.display = "flex";
+    document.querySelector(".loading-text").textContent = "正在构建知识图谱...";
+
+    const url = currentMode === "overview" ? "/api/overview" : "/api/graph";
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            graphData = data;
+            updateStats(data.stats);
+            if (network) {
+                const visNodes = new vis.DataSet(data.nodes.map(buildVisNode));
+                const visEdges = new vis.DataSet(data.edges.map(buildVisEdge));
+                allNodes = visNodes;
+                allEdges = visEdges;
+                network.setData({ nodes: visNodes, edges: visEdges });
+                network.setOptions({
+                    physics: {
+                        enabled: true,
+                        stabilization: { iterations: currentMode === "overview" ? 50 : 80 }
+                    }
+                });
+                physicsEnabled = true;
+                document.getElementById("btn-physics").classList.add("active");
+            } else {
+                initNetwork(data);
+            }
+            updateCounts();
+        })
+        .catch(err => {
+            console.error("加载失败:", err);
+            document.getElementById("loading").innerHTML = `<div class="loading-text" style="color:#ef4444">加载失败</div>`;
+        });
+}
+
+function initWebSocket() {
+    try {
+        socket = io();
+        socket.on("connect", () => {
+            document.getElementById("sync-dot").classList.remove("disconnected");
+            document.getElementById("sync-status").textContent = "同步中";
+        });
+        socket.on("disconnect", () => {
+            document.getElementById("sync-dot").classList.add("disconnected");
+            document.getElementById("sync-status").textContent = "断开";
+        });
+        socket.on("graph_updated", () => {
+            document.getElementById("sync-status").textContent = "已更新";
+            setTimeout(() => { document.getElementById("sync-status").textContent = "同步中"; }, 3000);
+            loadGraph();
+        });
+    } catch(e) {
+        console.warn("WebSocket不可用");
+    }
+}
+
+let searchTimeout;
+document.getElementById("search-input").addEventListener("input", function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const q = this.value.toLowerCase().trim();
+        if (!q) {
+            if (currentMode === "overview") {
+                loadGraph();
+            } else {
+                allNodes.forEach(n => allNodes.update({ id: n.id, hidden: false }));
+                updateCounts();
+            }
+            return;
+        }
+
+        document.getElementById("loading").style.display = "flex";
+        document.querySelector(".loading-text").textContent = "搜索中...";
+
+        fetch(`/api/search?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(data => {
+                const matchedSet = new Set(data.matched || []);
+                const allIds = new Set();
+                data.nodes.forEach(n => allIds.add(n.id));
+                data.edges.forEach(e => { allIds.add(e.source); allIds.add(e.target); });
+
+                if (allNodes && allEdges) {
+                    const existingIds = new Set();
+                    allNodes.forEach(n => existingIds.add(n.id));
+
+                    data.nodes.forEach(n => {
+                        if (!existingIds.has(n.id)) {
+                            try { allNodes.add(buildVisNode(n)); } catch(e) {}
+                        }
+                    });
+                    data.edges.forEach(e => {
+                        try { allEdges.add(buildVisEdge(e)); } catch(ex) {}
+                    });
+
+                    allNodes.forEach(n => {
+                        allNodes.update({ id: n.id, hidden: !allIds.has(n.id) });
+                    });
+                    allEdges.forEach(e => {
+                        const show = allIds.has(e.rawEdge.source) && allIds.has(e.rawEdge.target);
+                        allEdges.update({ id: e.id, hidden: !show });
+                    });
+                }
+
+                document.getElementById("loading").style.display = "none";
+                updateCounts();
+            })
+            .catch(err => {
+                console.error("搜索失败:", err);
+                document.getElementById("loading").style.display = "none";
+            });
+    }, 300);
+});
+
+document.getElementById("edge-filters").addEventListener("click", function(e) {
+    if (e.target.classList.contains("filter-tag")) {
+        this.querySelectorAll(".filter-tag").forEach(t => t.classList.remove("active"));
+        e.target.classList.add("active");
+        activeFilters.edge = e.target.dataset.edge;
+        applyEdgeFilter();
+    }
+});
+
+document.getElementById("attr-filters").addEventListener("click", function(e) {
+    const tag = e.target.closest(".filter-tag");
+    if (tag) {
+        this.querySelectorAll(".filter-tag").forEach(t => t.classList.remove("active"));
+        tag.classList.add("active");
+        activeFilters.attr = tag.dataset.attr;
+        applyAttrFilter();
+    }
+});
+
+document.getElementById("cat-filters").addEventListener("click", function(e) {
+    const tag = e.target.closest(".filter-tag");
+    if (tag) {
+        this.querySelectorAll(".filter-tag").forEach(t => t.classList.remove("active"));
+        tag.classList.add("active");
+        activeFilters.cat = tag.dataset.cat;
+        applyCatFilter();
+    }
+});
+
+buildLegend();
+loadGraph();
+initWebSocket();
+</script>
+</body>
+</html>
