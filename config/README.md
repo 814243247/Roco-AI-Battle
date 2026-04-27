@@ -24,6 +24,7 @@
 {
     "current_engine": "gemini",
     "use_ai": true,
+    "llama_cpp_embedding_model_path": "models/nomic-embed-text-v1.5.Q4_K_M.gguf",
     "context_limit": 4096,
     "max_tokens": 4048,
     "temperature": 0.5,
@@ -48,6 +49,7 @@
 |---|---|---|---|
 | `current_engine` | string | `"gemini"` | 当前使用的 AI 引擎 |
 | `use_ai` | bool | `true` | `true`=AI 决策, `false`=纯规则决策 |
+| `llama_cpp_embedding_model_path` | string | `"models/nomic-embed-text-v1.5.Q4_K_M.gguf"` | 本地 RAG 向量模型的相对或绝对路径 |
 | `context_limit` | int | `4096` | 上下文 token 上限，决定历史记录条数 |
 | `max_tokens` | int | `4048` | 模型最大输出长度 |
 | `temperature` | float | `0.5` | 模型温度，越低越稳定 |
